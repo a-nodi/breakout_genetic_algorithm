@@ -1,6 +1,18 @@
 import numpy as np
 
 
+def step(x):
+    return x > 0.5
+
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+
+def relu(x):
+    return np.maximum(0, x)
+
+
 class NetWork:
     def __init__(self):
         self.input_layer_size = 2
@@ -19,11 +31,5 @@ class NetWork:
         z2 = np.dot(a1, self.web2)
         a2 = np.tanh(z2)
         z3 = np.dot(a2, self.web3)
-        output = np.tanh(z3)
+        output = step(z3)
         return output
-
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
-
-    def relu(self, x):
-        return np.maximum(0, x)
