@@ -2,7 +2,7 @@ import numpy as np
 
 
 def step(x):
-    return x > 0.5
+    return x >= 0.5
 
 
 def sigmoid(x):
@@ -13,7 +13,7 @@ def relu(x):
     return np.maximum(0, x)
 
 
-class NetWork:
+class Network:
     def __init__(self):
         self.input_layer_size = 2
         self.hidden_layer1_size = 30
