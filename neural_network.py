@@ -1,8 +1,13 @@
 import numpy as np
 
 
-def step(x):
-    return x >= 0.5
+def double_step(x):
+    if x >= 1:
+        return 1
+    elif 0 <= x < 1:
+        return 0
+    else:
+        return -1
 
 
 def sigmoid(x):
@@ -15,9 +20,9 @@ def relu(x):
 
 class Network:
     def __init__(self):
-        self.input_layer_size = 3
+        self.input_layer_size = 2
         self.hidden_layer1_size = 15
-        self.hidden_layer2_size = 8
+        self.hidden_layer2_size = 6
         self.output_layer_size = 1
         self.web1 = np.random.rand(self.input_layer_size, self.hidden_layer1_size)
         self.web2 = np.random.rand(self.hidden_layer1_size, self.hidden_layer2_size)
@@ -31,5 +36,5 @@ class Network:
         z2 = np.dot(a1, self.web2)
         a2 = np.tanh(z2)
         z3 = np.dot(a2, self.web3)
-        output = step(z3)
+        output = double_step(z3)
         return output
