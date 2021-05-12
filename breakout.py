@@ -11,6 +11,7 @@ import logging
 from math import atan2, pi
 import numpy as np
 from neural_network import Network
+from multiprocessing import Queue
 
 
 def calculate_angle(p1: tuple, p2: tuple) -> float:
@@ -38,7 +39,7 @@ def calculate_distance(p1: tuple, p2: tuple) -> float:
     return d
 
 
-def game(genome):
+def game(genome, q):
     pygame.init()
 
     SCREEN_WIDTH = 1600
@@ -270,8 +271,5 @@ def game(genome):
     pygame.quit()
 
     genome.fitness = agent.score
-    print(genome.fitness)
-    return genome
+    q.put(genome)
 
-
-game(Network())

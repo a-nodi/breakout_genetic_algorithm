@@ -1,15 +1,6 @@
 import numpy as np
 
 
-def double_step(x):
-    if x >= 1:
-        return 1
-    elif 0 <= x < 1:
-        return 0
-    else:
-        return -1
-
-
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
@@ -36,5 +27,5 @@ class Network:
         z2 = np.dot(a1, self.web2)
         a2 = np.tanh(z2)
         z3 = np.dot(a2, self.web3)
-        output = double_step(z3)
+        output = np.tanh(z3)
         return output
