@@ -7,7 +7,8 @@ class Generation:
     def __init__(self):
         self.list_of_genome = []
         self.population = 20
-        self.number_of_best_ones = 4
+        self.number_of_best_time_ones = 4
+        self.number_of_best_ones = 8
         self.number_of_lucky_ones = 1
         self.list_of_best_genome = []
         self.chance_of_mutation = 0.1
@@ -24,6 +25,8 @@ class Generation:
     def keep_best_genomes(self):
         self.list_of_genome.sort(key=lambda x: x.fitness, reverse=True)
         self.list_of_best_genome = self.list_of_genome[:self.number_of_best_ones]
+        self.list_of_best_genome.sort(key=lambda x: x.runtime, reverse=True)
+        self.list_of_best_genome = self.list_of_best_genome[:self.number_of_best_time_ones]
         self.list_of_genome = copy.deepcopy(self.list_of_best_genome[:])
 
     def mutations(self):  # 변이

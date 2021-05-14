@@ -9,6 +9,7 @@ from pygame.locals import *
 from math import atan2, pi
 import numpy as np
 from neural_network import Network
+from datetime import datetime
 
 
 def calculate_angle(p1: tuple, p2: tuple) -> float:
@@ -47,11 +48,13 @@ def game(list_of_weight_and_fitness):
 
     BACKGROUND_COLOR = (255, 255, 255)
 
+    TIMEOUT = 10 * 60
+
     # color
     cols = 20
     rows = 7
     clock = pygame.time.Clock()
-    fps = 60
+    fps = 30
     # pygame.screen = pygame.display.set_mode((1, 1))
 
     class Agent:
@@ -59,6 +62,15 @@ def game(list_of_weight_and_fitness):
             self.score = 0
             self.game_over = False
             self.isAllBlocksDestroyed = False
+            self.start_time = datetime.now()
+
+        def calculate_fitness(self):
+            fitness = self.score
+            return fitness
+
+        def calculate_timedelta(self):
+            timedelta = (datetime.now() - self.start_time).total_seconds()
+            return timedelta
 
     # 벽돌 클래스
     class Wall:
@@ -142,7 +154,7 @@ def game(list_of_weight_and_fitness):
 
             network_output = self.network.next_move(_environment_input)
             # print(_environment_input, network_output)
-            if 0 < float(network_output[0]) < 0.33 and self.rect.left > 0:
+            if 0.33 < float(network_output[0]) < 0.67 and self.rect.left > 0:
                 self.rect.x -= self.speed
                 self.direction = self.LEFT
 
@@ -172,7 +184,7 @@ def game(list_of_weight_and_fitness):
 
         def move(self, paddle_rect_top, paddle_direction, list_of_block):
             row_count = 0
-            collision_threshold = 5
+            collision_threshold = 10
             isAllBlocksDestroyed = True
             for row in list_of_block:
                 item_count = 0
@@ -238,7 +250,8 @@ def game(list_of_weight_and_fitness):
     player_paddle = Paddle(SCREEN_WIDTH, SCREEN_HEIGHT, cols, list_of_weight_and_fitness)
     ball = game_ball(player_paddle.x + player_paddle.width // 2, player_paddle.y - player_paddle.height, SCREEN_WIDTH, SCREEN_HEIGHT)
     agent = Agent()
-    while isrunning:
+
+    while isrunning and agent.score < cols * rows and not (agent.calculate_timedelta() > TIMEOUT):
 
         clock.tick(fps)
         screen.fill(BACKGROUND_COLOR)
@@ -269,13 +282,13 @@ def game(list_of_weight_and_fitness):
 
         pygame.display.update()
 
+
     pygame.quit()
 
-    list_of_weight_and_fitness.append(agent.score)
+    list_of_weight_and_fitness.append(agent.calculate_fitness())
+    list_of_weight_and_fitness.append(agent.calculate_timedelta())
     # import multiprocess_controller
     # multiprocess_controller.global_list_of_genome.append(copy.deepcopy(genome))
     # multiprocess_controller.center.list_of_performanced_genome.append(genome)
     # import subfile
     # subfile.list_of_genome.append(copy.deepcopy(genome))
-
-    # TODO: subfile 만들어서 실험할 것 https://stackoverflow.com/questions/13034496/using-global-variables-between-files

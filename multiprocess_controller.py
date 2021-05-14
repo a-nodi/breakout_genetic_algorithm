@@ -13,7 +13,6 @@ import logging
 from colorlog import ColoredFormatter
 from matplotlib import pyplot as plt
 import numpy as np
-import subfile
 import time
 
 global_list_of_genome = []
@@ -82,6 +81,7 @@ class CenterController:
             list_of_process = []
             list_of_manager = []
             list_of_genome_container = []
+            list_of_runtime = []
             self.list_of_performanced_genome = []
             self.logger.info(f"current generation = {self.generation_number}")
 
@@ -102,16 +102,10 @@ class CenterController:
                 list_of_process[genome_count].join()
                 performanced_genome = copy.deepcopy(genome)
                 performanced_genome.fitness = list_of_genome_container[genome_count][0][3]
+                performanced_genome.runtime = list_of_genome_container[genome_count][0][4]
                 self.logger.info(f"genome {genome_count + 1}, fitness = {performanced_genome.fitness}")
                 self.list_of_performanced_genome.append(performanced_genome)
                 genome_count += 1
-                """
-                list_of_process.append(process)
-
-            for process in list_of_process:
-            """
-
-            # for process in list_of_process:
 
             temp_population = 0
             # 학습 수행
@@ -131,8 +125,11 @@ class CenterController:
                 if genome.fitness > high_fitness:
                     high_fitness = genome.fitness
 
+            for genome in self.list_of_performanced_genome:
+                list_of_runtime.append(genome.runtime)
+
             # 신경망 피클링
-            self.save_network(self.list_of_performanced_genome, list_of_fitness)
+            self.save_network(self.list_of_performanced_genome, list_of_fitness, list_of_runtime)
             # 세대 교체
             self.generation.set_genomes(list_of_genome)
             self.generation.keep_best_genomes()
@@ -142,17 +139,19 @@ class CenterController:
             self.ploter.put_fitness(high_fitness)
             self.ploter.draw_plot()
 
-    def save_network(self, list_of_genome, list_of_fitness):
+    def save_network(self, list_of_genome, list_of_fitness, list_of_runtime):
         """
         신경망 피클링 메서드
         :param list_of_genome:
         :param list_of_fitness:
+        :param list_of_runtime:
         :return:
         """
         pickled_network = {
             "list_of_genome": list_of_genome,
             "list_of_fitness": list_of_fitness,
             "high_fitness": max(list_of_fitness),
+            "list_of_runtime": list_of_runtime
             }  # 신경망 정보 포맷
 
         # 피클링
@@ -184,7 +183,7 @@ class Ploter:
 
     def draw_plot(self):
 
-        self.ax.plot(np.array(list(range(self.generation_number))), np.array(self.list_of_high_fitness), color='#81C147')
+        self.ax.plot(np.array(list(range(1, self.generation_number + 1))), np.array(self.list_of_high_fitness), color='#81C147')
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
@@ -196,5 +195,4 @@ class Ploter:
 if __name__ == '__main__':
     center = CenterController()
     freeze_support()
-    subfile.init()
     center.run()

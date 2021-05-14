@@ -18,8 +18,8 @@ class Network:
         self.web1 = np.random.rand(self.input_layer_size, self.hidden_layer1_size)
         self.web2 = np.random.rand(self.hidden_layer1_size, self.hidden_layer2_size)
         self.web3 = np.random.rand(self.hidden_layer2_size, self.output_layer_size)
-
         self.fitness = 0
+        self.runtime = 0
 
     def next_move(self, input_):
         z1 = np.dot(input_, self.web1)
