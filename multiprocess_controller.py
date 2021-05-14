@@ -14,7 +14,7 @@ from colorlog import ColoredFormatter
 from matplotlib import pyplot as plt
 import numpy as np
 import subfile
-
+import time
 
 global_list_of_genome = []
 

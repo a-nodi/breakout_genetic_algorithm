@@ -12,7 +12,7 @@ def relu(x):
 class Network:
     def __init__(self):
         self.input_layer_size = 2
-        self.hidden_layer1_size = 15
+        self.hidden_layer1_size = 8
         self.hidden_layer2_size = 6
         self.output_layer_size = 1
         self.web1 = np.random.rand(self.input_layer_size, self.hidden_layer1_size)
@@ -23,11 +23,13 @@ class Network:
 
     def next_move(self, input_):
         z1 = np.dot(input_, self.web1)
-        a1 = np.tanh(z1)
+        # a1 = sigmoid(z1)
+        a1 = z1
         z2 = np.dot(a1, self.web2)
-        a2 = np.tanh(z2)
+        a2 = sigmoid(z2)
+        # a2 = z2
         z3 = np.dot(a2, self.web3)
-        output = np.tanh(z3)
+        output = sigmoid(z3)
         return output
 
     def set_weights(self, web1, web2, web3):

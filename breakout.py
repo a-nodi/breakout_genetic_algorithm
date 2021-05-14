@@ -16,7 +16,6 @@ def calculate_angle(p1: tuple, p2: tuple) -> float:
     dy = p2[1] - p1[1]
     if dy != 0:
         rad = atan2(dx, -dy)
-        rad %= 2 * pi
     else:
         if dx > 0:
             rad = pi / 2
@@ -142,12 +141,12 @@ def game(list_of_weight_and_fitness):
             self.direction = 0
 
             network_output = self.network.next_move(_environment_input)
-            print(_environment_input, network_output)
-            if 0 < network_output < 0.5 and self.rect.left > 0:
+            # print(_environment_input, network_output)
+            if 0 < float(network_output[0]) < 0.33 and self.rect.left > 0:
                 self.rect.x -= self.speed
                 self.direction = self.LEFT
 
-            elif 0.5 <= network_output < 1 and self.rect.right < self.screen_width:
+            elif 0.67 <= float(network_output[0]) < 1 and self.rect.right < self.screen_width:
                 self.rect.x += self.speed
                 self.direction = self.RIGHT
 
@@ -248,7 +247,7 @@ def game(list_of_weight_and_fitness):
         # 환경 계산
         angle = calculate_angle(player_paddle.rect.center, ball.rect.center)
         distance = calculate_distance(player_paddle.rect.center, ball.rect.center)
-        environment_input = np.array([angle, distance])
+        environment_input = np.array([angle / (pi / 2), distance / 2500])
 
         # AI 행동
         player_paddle.draw()
