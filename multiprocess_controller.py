@@ -2,9 +2,9 @@
 breakout genetic algorithm
 arther = 강곽 27th 이윤혁
 """
-
+import copy
 import os
-from multiprocessing import Process ,Queue
+from multiprocessing import Process, Manager, freeze_support
 from generation import Generation
 from breakout import game
 from datetime import datetime
@@ -13,6 +13,10 @@ import logging
 from colorlog import ColoredFormatter
 from matplotlib import pyplot as plt
 import numpy as np
+import subfile
+
+
+global_list_of_genome = []
 
 
 class CenterController:
@@ -58,6 +62,7 @@ class CenterController:
         self.logger.addHandler(self.stream_handler)
 
         self.ploter = Ploter()
+        self.list_of_performanced_genome = []
 
         self.path = ''
         self.create_network_dir()
@@ -75,34 +80,59 @@ class CenterController:
             high_fitness = 0
             list_of_fitness = []
             list_of_process = []
-            list_of_performanced_genome = []
-            q = Queue()
+            list_of_manager = []
+            list_of_genome_container = []
+            self.list_of_performanced_genome = []
+            self.logger.info(f"current generation = {self.generation_number}")
 
+            genome_count = 0
             for genome in list_of_genome:
-                list_of_process.append(Process(target=game, args=(genome, q)))
+                manager = Manager()
+                list_of_manager.append(manager)
+                genome_container = [list_of_manager[genome_count].list([genome.web1, genome.web2, genome.web3])]
+                list_of_genome_container.append(genome_container)
+                process = Process(target=game, args=(genome_container))
+                list_of_process.append(process)
+                self.logger.info(f"genome {genome_count + 1} process start")
+                list_of_process[genome_count].start()
+                genome_count += 1
 
-            q.close()
-            q.join_thread()
+            genome_count = 0
+            for genome in list_of_genome:
+                list_of_process[genome_count].join()
+                performanced_genome = copy.deepcopy(genome)
+                performanced_genome.fitness = list_of_genome_container[genome_count][0][3]
+                self.logger.info(f"genome {genome_count + 1}, fitness = {performanced_genome.fitness}")
+                self.list_of_performanced_genome.append(performanced_genome)
+                genome_count += 1
+                """
+                list_of_process.append(process)
 
             for process in list_of_process:
-                process.join()
+            """
 
-            survived_population = self.population
+            # for process in list_of_process:
 
+            temp_population = 0
             # 학습 수행
-            while survived_population > 0:
-                genome = q.get(block=True)
-                list_of_performanced_genome.append(genome)
-                survived_population -= 1
+            while len(self.list_of_performanced_genome) < self.population:
+                global global_list_of_genome
+                if global_list_of_genome:
+                    self.list_of_performanced_genome.append(global_list_of_genome.pop())
+
+                if temp_population < len(self.list_of_performanced_genome):
+                    temp_population = len(self.list_of_performanced_genome)
+                self.logger.info(f"remaining_population = {self.population - len(self.list_of_performanced_genome)}")
 
             # 적합도 기록
-            for genome in list_of_genome:
+            self.logger.info("searching high fitness")
+            for genome in self.list_of_performanced_genome:
                 list_of_fitness.append(genome.fitness)
                 if genome.fitness > high_fitness:
                     high_fitness = genome.fitness
 
             # 신경망 피클링
-            self.save_network(list_of_genome, list_of_fitness)
+            self.save_network(self.list_of_performanced_genome, list_of_fitness)
             # 세대 교체
             self.generation.set_genomes(list_of_genome)
             self.generation.keep_best_genomes()
@@ -129,6 +159,7 @@ class CenterController:
         with open(os.path.join(self.path, f"{self.generation_number}th_generation_genomes"), 'wb') as f:
             pickle.dump(pickled_network, f)
             self.logger.info(f"{self.generation_number}th generation pickled")
+            f.close()
 
     def create_network_dir(self):
         """
@@ -142,7 +173,7 @@ class CenterController:
 
 
 class Ploter:
-    def __init___(self):
+    def __init__(self):
         self.list_of_high_fitness = []
         self.fig = plt.figure(figsize=(12, 5))
         self.ax = plt.axes()
@@ -152,7 +183,8 @@ class Ploter:
         plt.show(block=False)
 
     def draw_plot(self):
-        self.ax.plot(np.array(list(range(self.generation_number + 1))), np.array(self.list_of_high_fitness), color='#81C147')
+
+        self.ax.plot(np.array(list(range(self.generation_number))), np.array(self.list_of_high_fitness), color='#81C147')
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
@@ -161,5 +193,8 @@ class Ploter:
         self.generation_number += 1
 
 
-center = CenterController()
-center.run()
+if __name__ == '__main__':
+    center = CenterController()
+    freeze_support()
+    subfile.init()
+    center.run()

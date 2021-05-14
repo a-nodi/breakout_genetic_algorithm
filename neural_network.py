@@ -29,3 +29,8 @@ class Network:
         z3 = np.dot(a2, self.web3)
         output = np.tanh(z3)
         return output
+
+    def set_weights(self, web1, web2, web3):
+        self.web1 = web1
+        self.web2 = web2
+        self.web3 = web3

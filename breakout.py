@@ -2,16 +2,13 @@
 breakout genetic algorithm
 arther = 강곽 27th 이윤혁
 """
-
-import datetime
+import copy
 
 import pygame
 from pygame.locals import *
-import logging
 from math import atan2, pi
 import numpy as np
 from neural_network import Network
-from multiprocessing import Queue
 
 
 def calculate_angle(p1: tuple, p2: tuple) -> float:
@@ -39,7 +36,7 @@ def calculate_distance(p1: tuple, p2: tuple) -> float:
     return d
 
 
-def game(genome, q):
+def game(list_of_weight_and_fitness):
     pygame.init()
 
     SCREEN_WIDTH = 1600
@@ -56,13 +53,13 @@ def game(genome, q):
     rows = 7
     clock = pygame.time.Clock()
     fps = 60
+    # pygame.screen = pygame.display.set_mode((1, 1))
 
     class Agent:
         def __init__(self):
             self.score = 0
             self.game_over = False
             self.isAllBlocksDestroyed = False
-            self.live_ball = False
 
     # 벽돌 클래스
     class Wall:
@@ -85,6 +82,7 @@ def game(genome, q):
 
             self.list_of_color = [BLOCK_PURPLE, BLOCK_VIOLET, BLOCK_BLUE, BLOCK_GREEN, BLOCK_YELLOW, BLOCK_ORENGE, BLOCK_RED]
             self.color_index = 0
+            # TODO: 뭔가 하려했음
 
         def create_wall(self):
             # 각각의 블럭을 담는 리스트
@@ -103,7 +101,7 @@ def game(genome, q):
                 rect = pygame.Rect(block_x, block_y, self.width, self.height)
                 now_color = self.list_of_color[self.color_index // self.cols]  # 열마다 같은색, 열 변경시 다음색
                 self.color_index = (self.color_index + 1) % (self.COLOR_COUNT * self.cols)
-                block_individual = [rect, now_color, [block_x, block_y]]  # TODO: 9:38 part 4 리스트 안에 생명력(0, 1) 이랑 다른 곳에서 리스트 접근하는거 수정할 것
+                block_individual = [rect, now_color, [block_x, block_y]]
                 block_row.append(block_individual)
 
             return block_row
@@ -111,9 +109,6 @@ def game(genome, q):
         def draw_wall(self):
             BLOCK_RECT_INDEX = 0
             BLOCK_COLOR_INDEX = 1
-            BLOCK_TUPLE_COORDINATE_INDEX = 3
-            BLOCK_X_INDEX = 0
-            BLOCK_Y_INDEX = 1
             for row in self.list_of_block:
                 for block in row:
                     block_rect = block[BLOCK_RECT_INDEX]
@@ -121,8 +116,13 @@ def game(genome, q):
                     pygame.draw.rect(screen, block_color, block_rect)
                     pygame.draw.rect(screen, self.background_color, (block_rect), 2)
 
+        def recreate_wall_layer(self):
+            list_of_iswall_later_recreated = []
+            for i in range(self.cols):
+                list_of_iswall_later_recreated.append(True)
+
     class Paddle:
-        def __init__(self, screen_width, screen_height, cols_):
+        def __init__(self, screen_width, screen_height, cols_, list_of_weight_and_fitness):
             self.height = 20
             self.width = screen_width // cols_
             self.screen_width = screen_width
@@ -133,14 +133,16 @@ def game(genome, q):
             self.direction = 0
             self.LEFT = -1
             self.RIGHT = 1
-
+            self.network = Network()
+            self.network.set_weights(list_of_weight_and_fitness[0], list_of_weight_and_fitness[1], list_of_weight_and_fitness[2])
             self.paddle_color = (128, 128, 128)
             self.paddle_outline = (100, 100, 100)
 
         def move(self, _environment_input):
             self.direction = 0
-            network_output = genome.next_move(_environment_input)
 
+            network_output = self.network.next_move(_environment_input)
+            print(_environment_input, network_output)
             if 0 < network_output < 0.5 and self.rect.left > 0:
                 self.rect.x -= self.speed
                 self.direction = self.LEFT
@@ -234,7 +236,7 @@ def game(genome, q):
     wall.create_wall()
     isrunning = True
 
-    player_paddle = Paddle(SCREEN_WIDTH, SCREEN_HEIGHT, cols)
+    player_paddle = Paddle(SCREEN_WIDTH, SCREEN_HEIGHT, cols, list_of_weight_and_fitness)
     ball = game_ball(player_paddle.x + player_paddle.width // 2, player_paddle.y - player_paddle.height, SCREEN_WIDTH, SCREEN_HEIGHT)
     agent = Agent()
     while isrunning:
@@ -247,7 +249,6 @@ def game(genome, q):
         angle = calculate_angle(player_paddle.rect.center, ball.rect.center)
         distance = calculate_distance(player_paddle.rect.center, ball.rect.center)
         environment_input = np.array([angle, distance])
-        print(angle, distance)
 
         # AI 행동
         player_paddle.draw()
@@ -257,9 +258,10 @@ def game(genome, q):
         ball.draw()
         ball.move(player_paddle.rect.top, player_paddle.direction, wall.list_of_block)
         # print(ball.rect.x, ball.rect.y)
-        print(player_paddle.x, player_paddle.y)
         if agent.game_over:
             isrunning = False
+
+        # if agent.isAllBlocksDestroyed:
 
         # quit
         for event in pygame.event.get():
@@ -270,6 +272,11 @@ def game(genome, q):
 
     pygame.quit()
 
-    genome.fitness = agent.score
-    q.put(genome)
+    list_of_weight_and_fitness.append(agent.score)
+    # import multiprocess_controller
+    # multiprocess_controller.global_list_of_genome.append(copy.deepcopy(genome))
+    # multiprocess_controller.center.list_of_performanced_genome.append(genome)
+    # import subfile
+    # subfile.list_of_genome.append(copy.deepcopy(genome))
 
+    # TODO: subfile 만들어서 실험할 것 https://stackoverflow.com/questions/13034496/using-global-variables-between-files
