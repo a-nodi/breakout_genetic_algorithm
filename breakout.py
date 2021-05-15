@@ -43,19 +43,20 @@ def game(list_of_weight_and_fitness):
     SCREEN_HEIGHT = 900
 
     SCREEN_RESOLUTION = (SCREEN_WIDTH, SCREEN_HEIGHT)
+
     screen = pygame.display.set_mode(SCREEN_RESOLUTION)
+    pygame.screen = pygame.display.set_mode((1, 1))
     pygame.display.set_caption('breakout')
 
     BACKGROUND_COLOR = (255, 255, 255)
 
-    TIMEOUT = 10 * 60
+    TIMEOUT = 5 * 60
 
     # color
     cols = 20
     rows = 7
     clock = pygame.time.Clock()
-    fps = 30
-    # pygame.screen = pygame.display.set_mode((1, 1))
+    fps = 480
 
     class Agent:
         def __init__(self):
@@ -65,7 +66,7 @@ def game(list_of_weight_and_fitness):
             self.start_time = datetime.now()
 
         def calculate_fitness(self):
-            fitness = self.score
+            fitness = (self.score * 1000 - self.calculate_timedelta())/ 1400
             return fitness
 
         def calculate_timedelta(self):
@@ -195,9 +196,9 @@ def game(list_of_weight_and_fitness):
                             self.speed_y *= -1
                         if abs(self.rect.top - item[0].bottom) < collision_threshold and self.speed_y < 0:
                             self.speed_y *= -1
-                        if abs(self.rect.right - item[0].right) < collision_threshold and self.speed_x > 0:
+                        if abs(self.rect.right - item[0].left) < collision_threshold and self.speed_x > 0:
                             self.speed_x *= -1
-                        if abs(self.rect.left - item[0].left) < collision_threshold and self.speed_x < 0:
+                        if abs(self.rect.left - item[0].right) < collision_threshold and self.speed_x < 0:
                             self.speed_x *= -1
 
                         wall.list_of_block[row_count][item_count][0] = (0, 0, 0, 0)  # 파괴

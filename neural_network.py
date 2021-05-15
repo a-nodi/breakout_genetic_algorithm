@@ -12,7 +12,7 @@ def relu(x):
 class Network:
     def __init__(self):
         self.input_layer_size = 2
-        self.hidden_layer1_size = 8
+        self.hidden_layer1_size = 6
         self.hidden_layer2_size = 6
         self.output_layer_size = 1
         self.web1 = np.random.rand(self.input_layer_size, self.hidden_layer1_size)

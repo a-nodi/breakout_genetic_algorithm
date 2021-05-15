@@ -77,6 +77,7 @@ class CenterController:
             # 초기화
             self.generation_number += 1
             high_fitness = 0
+            average_fitness = 0
             list_of_fitness = []
             list_of_process = []
             list_of_manager = []
@@ -122,14 +123,17 @@ class CenterController:
             self.logger.info("searching high fitness")
             for genome in self.list_of_performanced_genome:
                 list_of_fitness.append(genome.fitness)
+                average_fitness += genome.fitness
                 if genome.fitness > high_fitness:
                     high_fitness = genome.fitness
+
+            average_fitness /= 20
 
             for genome in self.list_of_performanced_genome:
                 list_of_runtime.append(genome.runtime)
 
             # 신경망 피클링
-            self.save_network(self.list_of_performanced_genome, list_of_fitness, list_of_runtime)
+            self.save_network(self.list_of_performanced_genome, list_of_fitness, average_fitness, list_of_runtime)
             # 세대 교체
             self.generation.set_genomes(list_of_genome)
             self.generation.keep_best_genomes()
@@ -137,20 +141,23 @@ class CenterController:
 
             # 그래프 플롯팅
             self.ploter.put_fitness(high_fitness)
+            self.ploter.put_average_fitness(average_fitness)
             self.ploter.draw_plot()
 
-    def save_network(self, list_of_genome, list_of_fitness, list_of_runtime):
+    def save_network(self, list_of_genome, list_of_fitness, average_fitness,list_of_runtime):
         """
         신경망 피클링 메서드
         :param list_of_genome:
         :param list_of_fitness:
         :param list_of_runtime:
+        :param average_fitness:
         :return:
         """
         pickled_network = {
             "list_of_genome": list_of_genome,
             "list_of_fitness": list_of_fitness,
             "high_fitness": max(list_of_fitness),
+            "average_fitness": average_fitness,
             "list_of_runtime": list_of_runtime
             }  # 신경망 정보 포맷
 
@@ -174,6 +181,7 @@ class CenterController:
 class Ploter:
     def __init__(self):
         self.list_of_high_fitness = []
+        self.list_of_average_fitness = []
         self.fig = plt.figure(figsize=(12, 5))
         self.ax = plt.axes()
         self.generation_number = 0
@@ -182,14 +190,17 @@ class Ploter:
         plt.show(block=False)
 
     def draw_plot(self):
-
+        self.generation_number += 1
         self.ax.plot(np.array(list(range(1, self.generation_number + 1))), np.array(self.list_of_high_fitness), color='#81C147')
+        self.ax.plot(np.array(list(range(1, self.generation_number + 1))), np.array(self.list_of_average_fitness), color='#9966FF')
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
     def put_fitness(self, score):
         self.list_of_high_fitness.append(score)
-        self.generation_number += 1
+
+    def put_average_fitness(self, fitness):
+        self.list_of_average_fitness.append(fitness)
 
 
 if __name__ == '__main__':
