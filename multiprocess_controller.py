@@ -13,8 +13,6 @@ import logging
 from colorlog import ColoredFormatter
 from matplotlib import pyplot as plt
 import numpy as np
-import time
-
 global_list_of_genome = []
 
 
@@ -144,7 +142,7 @@ class CenterController:
             self.ploter.put_average_fitness(average_fitness)
             self.ploter.draw_plot()
 
-    def save_network(self, list_of_genome, list_of_fitness, average_fitness,list_of_runtime):
+    def save_network(self, list_of_genome, list_of_fitness, average_fitness, list_of_runtime):
         """
         신경망 피클링 메서드
         :param list_of_genome:
@@ -162,7 +160,7 @@ class CenterController:
             }  # 신경망 정보 포맷
 
         # 피클링
-        with open(os.path.join(self.path, f"{self.generation_number}th_generation_genomes"), 'wb') as f:
+        with open(os.path.join(self.path, f"{self.generation_number}th_generation_genomes.pickle"), 'wb') as f:
             pickle.dump(pickled_network, f)
             self.logger.info(f"{self.generation_number}th generation pickled")
             f.close()
@@ -186,7 +184,7 @@ class Ploter:
         self.ax = plt.axes()
         self.generation_number = 0
         plt.xlabel('generation number', fontsize=10)
-        plt.ylabel('fitess', fontsize=10)
+        plt.ylabel('fitness', fontsize=10)
         plt.show(block=False)
 
     def draw_plot(self):
