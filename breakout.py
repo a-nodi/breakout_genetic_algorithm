@@ -2,14 +2,15 @@
 breakout genetic algorithm
 arther = 강곽 27th 이윤혁
 """
-import copy
-
 import pygame
 from pygame.locals import *
 from math import atan2, pi
 import numpy as np
 from neural_network import Network
 from datetime import datetime
+from copy import deepcopy
+
+COLLISION_THRESHOLD = 10
 
 
 def calculate_angle(p1: tuple, p2: tuple) -> float:
@@ -36,7 +37,7 @@ def calculate_distance(p1: tuple, p2: tuple) -> float:
     return d
 
 
-def game(list_of_weight_and_fitness):
+def game(network_data):
     pygame.init()
 
     SCREEN_WIDTH = 1600
@@ -51,7 +52,6 @@ def game(list_of_weight_and_fitness):
     BACKGROUND_COLOR = (255, 255, 255)
 
     TIMEOUT = 5 * 60
-
     # color
     cols = 20
     rows = 7
@@ -66,7 +66,7 @@ def game(list_of_weight_and_fitness):
             self.start_time = datetime.now()
 
         def calculate_fitness(self):
-            fitness = (self.score * 1000 - self.calculate_timedelta())/ 1400
+            fitness = (self.score * 1000 - self.calculate_timedelta()) / 1400
             return fitness
 
         def calculate_timedelta(self):
@@ -94,7 +94,6 @@ def game(list_of_weight_and_fitness):
 
             self.list_of_color = [BLOCK_PURPLE, BLOCK_VIOLET, BLOCK_BLUE, BLOCK_GREEN, BLOCK_YELLOW, BLOCK_ORENGE, BLOCK_RED]
             self.color_index = 0
-            # TODO: 뭔가 하려했음
 
         def create_wall(self):
             # 각각의 블럭을 담는 리스트
@@ -126,15 +125,10 @@ def game(list_of_weight_and_fitness):
                     block_rect = block[BLOCK_RECT_INDEX]
                     block_color = block[BLOCK_COLOR_INDEX]
                     pygame.draw.rect(screen, block_color, block_rect)
-                    pygame.draw.rect(screen, self.background_color, (block_rect), 2)
-
-        def recreate_wall_layer(self):
-            list_of_iswall_later_recreated = []
-            for i in range(self.cols):
-                list_of_iswall_later_recreated.append(True)
+                    pygame.draw.rect(screen, self.background_color, block_rect, 2)
 
     class Paddle:
-        def __init__(self, screen_width, screen_height, cols_, list_of_weight_and_fitness):
+        def __init__(self, screen_width, screen_height, cols_, network_data_):
             self.height = 20
             self.width = screen_width // cols_
             self.screen_width = screen_width
@@ -146,7 +140,7 @@ def game(list_of_weight_and_fitness):
             self.LEFT = -1
             self.RIGHT = 1
             self.network = Network()
-            self.network.set_weights(list_of_weight_and_fitness[0], list_of_weight_and_fitness[1], list_of_weight_and_fitness[2])
+            self.network.set_weights(network_data_[0], network_data_[1], network_data_[2])
             self.paddle_color = (128, 128, 128)
             self.paddle_outline = (100, 100, 100)
 
@@ -168,7 +162,7 @@ def game(list_of_weight_and_fitness):
             pygame.draw.rect(screen, self.paddle_outline, self.rect, 3)
 
     # 공 클래스
-    class game_ball:
+    class Ball:
         def __init__(self, x, y, screen_width, screen_height):
             self.ball_rad = 10
             self.x = x - self.ball_rad
@@ -183,11 +177,19 @@ def game(list_of_weight_and_fitness):
             self.ball_outline = (100, 100, 100)
             self.game_over = False
 
-        def move(self, paddle_rect_top, paddle_direction, list_of_block):
+        def move(self):
+            self.rect.x += self.speed_x
+            self.rect.y += self.speed_y
+
+        def draw(self):
+            pygame.draw.circle(screen, self.ball_color, (self.rect.x + self.ball_rad, self.rect.y + self.ball_rad), self.ball_rad)
+            pygame.draw.circle(screen, self.ball_outline, (self.rect.x + self.ball_rad, self.rect.y + self.ball_rad), self.ball_rad, 3)
+
+        def block_collision_check(self, list_of_block_, collision_threshold):
             row_count = 0
-            collision_threshold = 10
             isAllBlocksDestroyed = True
-            for row in list_of_block:
+            score_increase_ = 0
+            for row in list_of_block_:
                 item_count = 0
                 for item in row:
                     # 충돌 검사
@@ -201,24 +203,24 @@ def game(list_of_weight_and_fitness):
                         if abs(self.rect.left - item[0].right) < collision_threshold and self.speed_x < 0:
                             self.speed_x *= -1
 
-                        wall.list_of_block[row_count][item_count][0] = (0, 0, 0, 0)  # 파괴
-                        agent.score += 1
+                        list_of_block_[row_count][item_count][0] = (0, 0, 0, 0)  # 파괴
+                        score_increase_ += 1
 
                     else:
                         isAllBlocksDestroyed = False
                     item_count += 1
                 row_count += 1
 
-            agent.isAllBlocksDestroyed = isAllBlocksDestroyed
+            return isAllBlocksDestroyed, score_increase_, list_of_block_
 
+        def screen_border_coliision_check(self):
             # 벽 충돌
             if self.rect.left < 0 or self.rect.right > self.screen_width:
                 self.speed_x *= -1
             if self.rect.top < 0:
                 self.speed_y *= -1
-            if self.rect.bottom > self.screen_height:
-                self.game_over = True
-
+        
+        def paddle_coliision_check(self, paddle_rect_top, paddle_direction, collision_threshold):
             # paddle 충돌
             if self.rect.colliderect(player_paddle):
                 # 상단면 충돌 검사
@@ -231,25 +233,19 @@ def game(list_of_weight_and_fitness):
                         self.speed_x = -self.speed_max
                 else:
                     self.speed_x *= -1
-
-            self.rect.x += self.speed_x
-            self.rect.y += self.speed_y
-
-            if self.rect.y > player_paddle.rect.y:
+        
+        def game_over_check(self, player_paddle_y):
+            if self.rect.y > player_paddle_y:
                 self.game_over = True
-
-            agent.game_over = self.game_over
-
-        def draw(self):
-            pygame.draw.circle(screen, self.ball_color, (self.rect.x + self.ball_rad, self.rect.y + self.ball_rad), self.ball_rad)
-            pygame.draw.circle(screen, self.ball_outline, (self.rect.x + self.ball_rad, self.rect.y + self.ball_rad), self.ball_rad, 3)
-
+            
+            return self.game_over
+                
     wall = Wall(BACKGROUND_COLOR, SCREEN_WIDTH, rows, cols)
     wall.create_wall()
     isrunning = True
 
-    player_paddle = Paddle(SCREEN_WIDTH, SCREEN_HEIGHT, cols, list_of_weight_and_fitness)
-    ball = game_ball(player_paddle.x + player_paddle.width // 2, player_paddle.y - player_paddle.height, SCREEN_WIDTH, SCREEN_HEIGHT)
+    player_paddle = Paddle(SCREEN_WIDTH, SCREEN_HEIGHT, cols, network_data)
+    ball = Ball(player_paddle.x + player_paddle.width // 2, player_paddle.y - player_paddle.height, SCREEN_WIDTH, SCREEN_HEIGHT)
     agent = Agent()
 
     while isrunning and agent.score < cols * rows and not (agent.calculate_timedelta() > TIMEOUT):
@@ -269,12 +265,16 @@ def game(list_of_weight_and_fitness):
 
         # 공 운동
         ball.draw()
-        ball.move(player_paddle.rect.top, player_paddle.direction, wall.list_of_block)
-        # print(ball.rect.x, ball.rect.y)
+        agent.isAllBlocksDestroyed, score_increase, list_of_block = ball.block_collision_check(deepcopy(wall.list_of_block), COLLISION_THRESHOLD)
+        wall.list_of_block = deepcopy(list_of_block)
+        agent.score += score_increase
+        ball.screen_border_coliision_check()
+        ball.paddle_coliision_check(player_paddle.rect.top, player_paddle.direction, COLLISION_THRESHOLD)
+        ball.move()
+        agent.game_over = ball.game_over_check(player_paddle.rect.y)
+        
         if agent.game_over:
             isrunning = False
-
-        # if agent.isAllBlocksDestroyed:
 
         # quit
         for event in pygame.event.get():
@@ -283,13 +283,7 @@ def game(list_of_weight_and_fitness):
 
         pygame.display.update()
 
-
     pygame.quit()
 
-    list_of_weight_and_fitness.append(agent.calculate_fitness())
-    list_of_weight_and_fitness.append(agent.calculate_timedelta())
-    # import multiprocess_controller
-    # multiprocess_controller.global_list_of_genome.append(copy.deepcopy(genome))
-    # multiprocess_controller.center.list_of_performanced_genome.append(genome)
-    # import subfile
-    # subfile.list_of_genome.append(copy.deepcopy(genome))
+    network_data.append(agent.calculate_fitness())
+    network_data.append(agent.calculate_timedelta())
