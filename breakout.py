@@ -37,12 +37,12 @@ def calculate_distance(p1: tuple, p2: tuple) -> float:
     return d
 
 
-def game(network_data):
+def game(genome_data):
     pygame.init()
 
     SCREEN_WIDTH = 1600
     SCREEN_HEIGHT = 900
-
+    SCREEN_DIAGONAL = calculate_distance((0, 0), (SCREEN_WIDTH, SCREEN_HEIGHT))
     SCREEN_RESOLUTION = (SCREEN_WIDTH, SCREEN_HEIGHT)
 
     screen = pygame.display.set_mode(SCREEN_RESOLUTION)
@@ -66,7 +66,7 @@ def game(network_data):
             self.start_time = datetime.now()
 
         def calculate_fitness(self):
-            fitness = (self.score * 1000 - self.calculate_timedelta()) / 1400
+            fitness = (self.score * 1000 - self.calculate_timedelta()) / (rows * cols * 10)
             return fitness
 
         def calculate_timedelta(self):
@@ -213,16 +213,16 @@ def game(network_data):
 
             return isAllBlocksDestroyed, score_increase_, list_of_block_
 
-        def screen_border_coliision_check(self):
+        def screen_border_collision_check(self):
             # 벽 충돌
             if self.rect.left < 0 or self.rect.right > self.screen_width:
                 self.speed_x *= -1
             if self.rect.top < 0:
                 self.speed_y *= -1
         
-        def paddle_coliision_check(self, paddle_rect_top, paddle_direction, collision_threshold):
+        def paddle_collision_check(self, paddle_rect_top, paddle_direction, collision_threshold):
             # paddle 충돌
-            if self.rect.colliderect(player_paddle):
+            if self.rect.colliderect(paddle):
                 # 상단면 충돌 검사
                 if abs(self.rect.bottom - paddle_rect_top) < collision_threshold and self.speed_y > 0:
                     self.speed_y *= -1
@@ -244,36 +244,36 @@ def game(network_data):
     wall.create_wall()
     isrunning = True
 
-    player_paddle = Paddle(SCREEN_WIDTH, SCREEN_HEIGHT, cols, network_data)
-    ball = Ball(player_paddle.x + player_paddle.width // 2, player_paddle.y - player_paddle.height, SCREEN_WIDTH, SCREEN_HEIGHT)
+    paddle = Paddle(SCREEN_WIDTH, SCREEN_HEIGHT, cols, genome_data)
+    ball = Ball(paddle.x + paddle.width // 2, paddle.y - paddle.height, SCREEN_WIDTH, SCREEN_HEIGHT)
     agent = Agent()
 
-    while isrunning and agent.score < cols * rows and not (agent.calculate_timedelta() > TIMEOUT):
+    while isrunning:
 
         clock.tick(fps)
         screen.fill(BACKGROUND_COLOR)
         wall.draw_wall()
 
         # 환경 계산
-        angle = calculate_angle(player_paddle.rect.center, ball.rect.center)
-        distance = calculate_distance(player_paddle.rect.center, ball.rect.center)
-        environment_input = np.array([angle / (pi / 2), distance / 2500])
+        angle = calculate_angle(paddle.rect.center, ball.rect.center)
+        distance = calculate_distance(paddle.rect.center, ball.rect.center)
+        environment_input = np.array([angle / (pi / 2), distance / SCREEN_DIAGONAL])
 
         # AI 행동
-        player_paddle.draw()
-        player_paddle.move(environment_input)
+        paddle.draw()
+        paddle.move(environment_input)
 
         # 공 운동
         ball.draw()
         agent.isAllBlocksDestroyed, score_increase, list_of_block = ball.block_collision_check(deepcopy(wall.list_of_block), COLLISION_THRESHOLD)
         wall.list_of_block = deepcopy(list_of_block)
         agent.score += score_increase
-        ball.screen_border_coliision_check()
-        ball.paddle_coliision_check(player_paddle.rect.top, player_paddle.direction, COLLISION_THRESHOLD)
+        ball.screen_border_collision_check()
+        ball.paddle_collision_check(paddle.rect.top, paddle.direction, COLLISION_THRESHOLD)
         ball.move()
-        agent.game_over = ball.game_over_check(player_paddle.rect.y)
+        agent.game_over = ball.game_over_check(paddle.rect.y)
         
-        if agent.game_over:
+        if agent.game_over or not agent.score < cols * rows or agent.calculate_timedelta() > TIMEOUT:
             isrunning = False
 
         # quit
@@ -285,5 +285,5 @@ def game(network_data):
 
     pygame.quit()
 
-    network_data.append(agent.calculate_fitness())
-    network_data.append(agent.calculate_timedelta())
+    genome_data.append(agent.calculate_fitness())
+    genome_data.append(agent.calculate_timedelta())
