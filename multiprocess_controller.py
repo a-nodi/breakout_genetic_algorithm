@@ -125,7 +125,7 @@ class CenterController:
                 if genome.fitness > high_fitness:
                     high_fitness = genome.fitness
 
-            average_fitness /= 20
+            average_fitness /= self.population
 
             for genome in self.list_of_performanced_genome:
                 list_of_runtime.append(genome.runtime)

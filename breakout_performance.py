@@ -3,6 +3,7 @@ breakout genetic algorithm
 arther = 강곽 27th 이윤혁
 """
 import copy
+import time
 import pickle
 import pygame
 from pygame.locals import *
@@ -296,10 +297,11 @@ def game(list_of_weight_and_fitness):
 
 
 if __name__ == "__main__":
-    with open("24th_generation_genomes.pickle", 'rb') as f:
+    with open("210515171835\\130th_generation_genomes", 'rb') as f:
         info = pickle.load(f)
         f.close()
 
-    genome = info['list_of_genome'][23]
+    genome = info['list_of_genome'][22]
     weights = [genome.web1, genome.web2, genome.web3]
+    time.sleep(5)
     game(weights)

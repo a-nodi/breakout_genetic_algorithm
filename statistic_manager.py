@@ -2,13 +2,13 @@ import pickle
 from matplotlib import pyplot as plt
 import numpy as np
 import copy
-
+import time
 
 class Ploter:
     def __init__(self):
         self.high_fitness_array = None
         self.average_fitness_array = None
-        self.fig = plt.figure(figsize=(64, 9))
+        self.fig = plt.figure(figsize=(256, 9))
         self.ax = plt.axes()
         self.generation_number = 0
         plt.xlabel('generation number', fontsize=10)
@@ -103,9 +103,13 @@ genome_array, fitness_array, high_fitness_array, average_fitness_array, runtime_
 gen_num = file_manager.get_gennum()
 file_manager.__init__()
 
+
 ploter = Ploter()
 ploter.put_high_fitness(high_fitness_array)
 ploter.put_average_fitness(average_fitness_array)
 ploter.put_gennum(gen_num)
-
-ploter.save_plot()
+ploter.draw_plot()
+time.sleep(10)
+# ploter.save_plot()
+print(high_fitness_array[129])
+print(np.argmax(fitness_array[129]))
